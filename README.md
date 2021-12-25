@@ -1,3 +1,4 @@
+
 # Ansible role dhcp v0.1
 
 An Ansible role for setting up a DHCP server based on ISC DHCP daemon. This role will install the required packages and manage the configuration  [dhcpd.conf(5)](http://linux.die.net/man/5/dhcpd.conf)  for the DHCPD daemon. 
@@ -120,19 +121,15 @@ The role variable **dhcp_subnets** contains a list of dicts, specifying the subn
 
 ```Yaml
 dhcp_subnets:
-  - ip: 192.168.222.0
-    netmask: 255.255.255.128
+  - ip: 192.168.100.0
+    netmask: 255.255.255.0
     domain_name_servers:
-      - 10.0.2.3
-      - 10.0.2.4
-    range_begin: 192.168.222.50
-    range_end: 192.168.222.127
-  - ip: 192.168.222.128
-    default_lease_time: 3600
-    max_lease_time: 7200
-    netmask: 255.255.255.128
-    domain_name_servers: 10.0.2.3
-    routers: 192.168.222.129
+      - 192.168.100.2
+    range_begin: 192.168.100.50
+    range_end: 192.168.100.254
+    subnet_mask: 255.255.255.0
+    routers: 192.168.100.1
+    domain_name: 'example.com'
 ```
 
 An alphabetical list of supported options in a subnet declaration:
@@ -200,17 +197,64 @@ You can specify hosts that should get a fixed IP address based on their MAC by s
 
 ```Yaml
 dhcp_hosts:
-  - name: cl1
-    mac: '00:11:22:33:44:55'
-    ip: 192.168.222.150
-  - name: cl2
-    mac: '00:de:ad:be:ef:00'
-    ip: 192.168.222.151
+  - name: bootstrap
+    mac: 52:54:00:61:a6:a5
+    ip: 192.168.100.50
+  - name: master1
+    mac: 52:54:00:c6:2f:ba
+    ip: 192.168.100.51
+  - name: master2
+    mac: 52:54:00:e8:22:e2
+    ip: 192.168.100.52
 ```
 
 ### Specify PXEBoot server
 
 Setting the variable **dhcp_pxeboot_server**, will redirect PXE clients to the specified PXEBoot server in order to boot over the network. The specified server should have boot images on the expected locations. 
+
+## How to use this role?
+
+#### Playbook to create additional libvirt storage and network
+```Yaml
+- name: Starting with DHCP configuration
+  hosts: utility
+  become: yes
+  vars_files:
+    - 'configs/password.yml'
+    - 'configs/initial-dhcp-config.yml'
+    
+  roles:
+    - dhcp
+```
+For additional examples lookup the **tests** directory within the role.
+
+#### configs/initial-dhcp-config.yml
+```Yaml
+dhcp_global_default_lease_time: 28800   # 8hrs
+dhcp_global_max_lease_time: 43200       # 12 hrs
+dhcp_global_ddns_update_style: interim
+dhcp_global_client_updates: ignore
+dhcp_global_authoritative: authoritative
+dhcp_global_unknown_clients: allow
+
+dhcp_subnets:
+  - ip: 192.168.100.0
+    netmask: 255.255.255.0
+    domain_name_servers:
+      - 192.168.100.2
+    range_begin: 192.168.100.50
+    range_end: 192.168.100.254
+    subnet_mask: 255.255.255.0
+    routers: 192.168.100.1
+    domain_name: 'example.com'
+
+```
+
+#### configs/password.yml
+```Yaml
+# CHANGE this to match the host on which this role will be executed
+sudo_password: GobbleDeGook
+```
 
 ## Dependencies
 
