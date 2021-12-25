@@ -11,10 +11,8 @@ galaxy_info:
     - name: Fedora
       versions:
         - 29
-    - name: Ubuntu
-      versions:
-        - bionic
   galaxy_tags:
     - system
+    - dhcp
     - networking
 dependencies: []
